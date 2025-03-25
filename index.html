@@ -3,342 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>客户检索系统</title>
-    <link href="https://cdn.jsdelivr.net/npm/element-plus/dist/index.css" rel="stylesheet">
+    <title>区域选择</title>
     <style>
-        .container {
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
             padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .search-container {
-            display: flex;
-            gap: 10px;
-        }
-        .search-left {
-            width: 150px;
-            position: relative;
-        }
-        .search-right {
-            flex: 1;
-            position: relative;
-        }
-        .search-result {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            background: white;
-            border: 1px solid #dcdfe6;
-            border-radius: 4px;
-            margin-top: 5px;
-            box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
-            z-index: 1000;
-        }
-        .result-item {
-            padding: 12px 20px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .result-item:hover {
-            background-color: #f5f7fa;
-        }
-        .result-item .title {
-            font-size: 14px;
-            color: #333;
-            margin-bottom: 4px;
-        }
-        .result-item .sub-title {
-            font-size: 12px;
-            color: #999;
-        }
-        .tag {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 2px;
-            font-size: 12px;
-            margin-right: 5px;
-        }
-        .tag-member {
-            background-color: #fff7e6;
-            color: #ff9900;
-        }
-        .tag-size {
-            background-color: #f6ffed;
-            color: #52c41a;
-        }
-        .tag-center {
-            background-color: #e6f7ff;
-            color: #1890ff;
-        }
-        .tag-region {
-            background-color: #f9f0ff;
-            color: #722ed1;
-        }
-        .tag-province {
-            background-color: #fff0f6;
-            color: #eb2f96;
-        }
-        .tag-cancelled {
-            background-color: #fff1f0;
-            color: #ff4d4f;
-        }
-        .manager {
-            float: right;
-            color: #333;
-            font-size: 12px;
-            padding: 2px 8px;
             background-color: #f5f5f5;
-            border-radius: 2px;
         }
-        .location {
-            float: right;
-            color: #999;
-            font-size: 12px;
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .tag-agent {
-            background-color: #e6f7ff;
-            color: #1890ff;
-            font-weight: bold;
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            color: #333;
+            background-color: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        select:hover {
+            border-color: #999;
+        }
+        select:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74,144,226,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div id="app" class="container">
-        <div class="search-container">
-            <!-- 左侧下拉选择 -->
-            <div class="search-left">
-                <el-dropdown trigger="click" @command="handleTypeChange">
-                    <el-button type="default" style="width: 100%">
-                        {{ currentTypeLabel }}<el-icon class="el-icon--right"><arrow-down /></el-icon>
-                    </el-button>
-                    <template #dropdown>
-                        <el-dropdown-menu>
-                            <el-dropdown-item command="contact">联系人</el-dropdown-item>
-                            <el-dropdown-item command="company">企业</el-dropdown-item>
-                            <el-dropdown-item command="agent">个代</el-dropdown-item>
-                            <el-dropdown-item command="agency">中介</el-dropdown-item>
-                        </el-dropdown-menu>
-                    </template>
-                </el-dropdown>
-            </div>
-            
-            <!-- 右侧搜索框 -->
-            <div class="search-right">
-                <el-input
-                    v-model="searchKeyword"
-                    :placeholder="getPlaceholder"
-                    @input="handleSearch">
-                    <template #append>
-                        <el-button>搜索</el-button>
-                    </template>
-                </el-input>
-
-                <!-- 搜索结果下拉框 -->
-                <div v-if="showResults && filteredData.length > 0" class="search-result">
-                    <div v-for="item in filteredData" 
-                         :key="item.id" 
-                         class="result-item"
-                         @click="handleItemClick(item)">
-                        <div class="title">
-                            {{ item.name }}
-                            <div style="display: inline-block;">
-                                <!-- 联系人类型，且是个代时显示个代标识 -->
-                                <template v-if="currentType === 'contact'">
-                                    <span v-if="item.isPersonalAgent" class="tag tag-agent">个代</span>
-                                </template>
-                                
-                                <!-- 非联系人类型时显示会员和注销标识 -->
-                                <template v-else>
-                                    <span v-if="item.isMember" class="tag tag-member">会员</span>
-                                    <span v-if="item.isCancelled" class="tag tag-cancelled">注销</span>
-                                </template>
-
-                                <!-- 如果是个代类型的联系人或其他类型，显示完整标识 -->
-                                <template v-if="currentType !== 'contact' || item.isPersonalAgent">
-                                    <span v-if="item.size" class="tag tag-size">{{ item.size }}</span>
-                                    <span v-if="item.center" class="tag tag-center">{{ item.center }}</span>
-                                    <span v-if="item.region" class="tag tag-region">{{ item.region }}</span>
-                                    <span v-if="item.isProvinceDirect" class="tag tag-province">省直单</span>
-                                </template>
-                            </div>
-                            <!-- 如果是个代类型的联系人或其他类型，显示客户经理 -->
-                            <span v-if="currentType !== 'contact' || item.isPersonalAgent" class="manager">{{ item.manager }}</span>
-                        </div>
-                        <div class="sub-title">
-                            <!-- 根据不同类型显示不同的编号 -->
-                            <template v-if="currentType === 'contact'">{{ item.phone }}</template>
-                            <template v-else-if="currentType === 'agent'">{{ item.userCode }}</template>
-                            <template v-else>{{ item.taxId }}</template>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="container">
+        <h1>区域选择</h1>
+        <div class="form-group">
+            <label for="businessArea">所属大区</label>
+            <select id="businessArea">
+                <option value="">请选择所属大区</option>
+                <optgroup label="中小">
+                    <option value="江浙沪">江浙沪</option>
+                    <option value="河北">河北</option>
+                    <option value="闽赣">闽赣</option>
+                    <option value="深圳">深圳</option>
+                </optgroup>
+                <optgroup label="财代">
+                    <option value="浙江">浙江</option>
+                    <option value="陕甘青">陕甘青</option>
+                    <option value="河北">河北</option>
+                    <option value="广深">广深</option>
+                </optgroup>
+                <optgroup label="政务">
+                    <option value="华南">华南</option>
+                    <option value="华北">华北</option>
+                    <option value="华东">华东</option>
+                    <option value="华西">华西</option>
+                </optgroup>
+                <optgroup label="大客">
+                    <option value="中央">中央</option>
+                    <option value="银行">银行</option>
+                    <option value="华北">华北</option>
+                </optgroup>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="administrative">行政区划</label>
+            <select id="administrative">
+                <option value="">请选择行政区划</option>
+                <option value="北京">北京市</option>
+                <option value="天津">天津市</option>
+                <option value="河北">河北省</option>
+                <option value="山西">山西省</option>
+                <option value="内蒙古">内蒙古自治区</option>
+                <option value="辽宁">辽宁省</option>
+                <option value="吉林">吉林省</option>
+                <option value="黑龙江">黑龙江省</option>
+                <option value="上海">上海市</option>
+                <option value="江苏">江苏省</option>
+                <option value="浙江">浙江省</option>
+                <option value="安徽">安徽省</option>
+                <option value="福建">福建省</option>
+                <option value="江西">江西省</option>
+                <option value="山东">山东省</option>
+                <option value="河南">河南省</option>
+                <option value="湖北">湖北省</option>
+                <option value="湖南">湖南省</option>
+                <option value="广东">广东省</option>
+                <option value="广西">广西壮族自治区</option>
+                <option value="海南">海南省</option>
+                <option value="重庆">重庆市</option>
+                <option value="四川">四川省</option>
+                <option value="贵州">贵州省</option>
+                <option value="云南">云南省</option>
+                <option value="西藏">西藏自治区</option>
+                <option value="陕西">陕西省</option>
+                <option value="甘肃">甘肃省</option>
+                <option value="青海">青海省</option>
+                <option value="宁夏">宁夏回族自治区</option>
+                <option value="新疆">新疆维吾尔自治区</option>
+            </select>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/element-plus"></script>
-    <script>
-        const { createApp, ref, computed } = Vue;
-
-        const app = createApp({
-            setup() {
-                const currentType = ref('contact');
-                const searchKeyword = ref('');
-                const showResults = ref(false);
-
-                // 当前选择的类型标签
-                const currentTypeLabel = computed(() => {
-                    const labels = {
-                        contact: '联系人',
-                        company: '企业',
-                        agent: '个代',
-                        agency: '中介'
-                    };
-                    return labels[currentType.value];
-                });
-
-                // 测试数据
-                const testData = {
-                    contact: [
-                        {
-                            id: 1,
-                            name: "张三",
-                            phone: "13812345678",
-                            isPersonalAgent: false // 普通联系人
-                        },
-                        {
-                            id: 2,
-                            name: "李四",
-                            phone: "13987654321",
-                            isPersonalAgent: true, // 个代联系人
-                            center: "华北中心",
-                            region: "河北大区",
-                            isProvinceDirect: true,
-                            manager: "王经理"
-                        }
-                    ],
-                    company: [
-                        {
-                            id: 1,
-                            name: "华兴公司",
-                            taxId: "96349210DEWQMLKGH2",
-                            size: "中小",
-                            isMember: true,
-                            isCancelled: false, // 新增注销标识
-                            center: "华北中心",
-                            region: "河北大区",
-                            isProvinceDirect: true,
-                            manager: "王经理"
-                        }
-                    ],
-                    agent: [
-                        {
-                            id: 1,
-                            name: "赵六",
-                            userCode: "PA20230001", // 只展示用户代码，不展示电话
-                            isMember: true,
-                            isCancelled: false, // 新增注销标识
-                            center: "华北中心",
-                            region: "天津大区",
-                            isProvinceDirect: false,
-                            manager: "张经理"
-                        }
-                    ],
-                    agency: [
-                        {
-                            id: 1,
-                            name: "诚信会计师事务所",
-                            taxId: "91110105MA11223344",
-                            isMember: true,
-                            isCancelled: false, // 新增注销标识
-                            center: "华北中心",
-                            region: "河北大区",
-                            isProvinceDirect: true,
-                            manager: "吴经理"
-                        }
-                    ]
-                };
-
-                // 添加一些已注销的测试数据
-                testData.company.push({
-                    id: 2,
-                    name: "已注销公司",
-                    taxId: "91110105MA11223355",
-                    size: "中小",
-                    isMember: true,
-                    isCancelled: true,
-                    center: "华北中心",
-                    region: "河北大区",
-                    isProvinceDirect: false,
-                    manager: "赵经理"
-                });
-
-                testData.agent.push({
-                    id: 2,
-                    name: "已注销个代",
-                    userCode: "PA20230002",
-                    isMember: true,
-                    isCancelled: true,
-                    center: "华北中心",
-                    region: "河北大区",
-                    isProvinceDirect: false,
-                    manager: "钱经理"
-                });
-
-                const getPlaceholder = computed(() => {
-                    const placeholders = {
-                        contact: '请输入姓名或号码',
-                        company: '请输入名称、税号或统一社会信用代码',
-                        agent: '请输入姓名、用户代码或手机号',
-                        agency: '请输入名称、用户代码或统一社会信用代码'
-                    };
-                    return placeholders[currentType.value];
-                });
-
-                const filteredData = computed(() => {
-                    if (!searchKeyword.value) return [];
-                    const keyword = searchKeyword.value.toLowerCase();
-                    return testData[currentType.value].filter(item => {
-                        const searchFields = [item.name, item.phone, item.taxId].filter(Boolean);
-                        return searchFields.some(field => 
-                            field.toLowerCase().includes(keyword)
-                        );
-                    });
-                });
-
-                const handleTypeChange = (type) => {
-                    currentType.value = type;
-                    searchKeyword.value = '';
-                    showResults.value = false;
-                };
-
-                const handleSearch = () => {
-                    showResults.value = searchKeyword.value.length > 0;
-                };
-
-                const handleItemClick = (item) => {
-                    console.log('选中项:', item);
-                    showResults.value = false;
-                };
-
-                return {
-                    currentType,
-                    currentTypeLabel,
-                    searchKeyword,
-                    showResults,
-                    getPlaceholder,
-                    filteredData,
-                    handleTypeChange,
-                    handleSearch,
-                    handleItemClick
-                };
-            }
-        });
-
-        app.use(ElementPlus);
-        app.mount('#app');
-    </script>
 </body>
 </html>
